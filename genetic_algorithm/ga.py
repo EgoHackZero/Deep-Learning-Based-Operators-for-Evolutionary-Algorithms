@@ -5,8 +5,8 @@
 import random
 from typing import Callable, Optional
 
-from crossovers import BaseCrossover
-from mutations import BaseMutation
+from genetic_algorithm.crossovers.base_crossover import BaseCrossover
+from genetic_algorithm.mutations.base_mutation import BaseMutation
 
 
 class GeneticAlgorithm:

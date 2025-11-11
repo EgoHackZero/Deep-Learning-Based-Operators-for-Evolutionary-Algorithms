@@ -1,7 +1,5 @@
-# from my old project - https://github.com/Mruzik1/Genetic-Algorithms/tree/main
-
 from abc import ABC, abstractmethod
-from random import randint, random
+from random import random
 from typing import Optional
 
 
@@ -48,31 +46,3 @@ class BaseMutation(ABC):
         """Validates that offspring has minimum required length"""
         if len(offspring) < min_length:
             raise ValueError(f"Offspring length must be at least {min_length}, got {len(offspring)}")
-
-
-# inversion mutation - reverses a random subset
-class InversionMutation(BaseMutation):
-    def _mutate(self, offspring: list, **kwargs) -> list:
-        self._validate_offspring(offspring)
-        tmp_offspring = offspring.copy()
-        start, end = self.__find_subset(len(tmp_offspring))
-        tmp_offspring = tmp_offspring[:start] + list(reversed(tmp_offspring[start:end])) + tmp_offspring[end:]
-        return tmp_offspring
-    
-    def __find_subset(self, length: int) -> tuple:
-        start = randint(0, length-2)
-        end = randint(start+2, length)
-        return start, end
-
-
-# swap mutation - switches 2 random elements
-class SwapMutation(BaseMutation):
-    def _mutate(self, offspring: list, **kwargs) -> list:
-        self._validate_offspring(offspring)
-        tmp_offspring = offspring.copy()
-        first = randint(0, len(tmp_offspring)-1)
-        second = first
-        while second == first:
-            second = randint(0, len(tmp_offspring)-1)
-        tmp_offspring[first], tmp_offspring[second] = tmp_offspring[second], tmp_offspring[first]
-        return tmp_offspring
