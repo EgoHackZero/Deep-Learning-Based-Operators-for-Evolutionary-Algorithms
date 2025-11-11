@@ -1,15 +1,4 @@
-"""
-RL-based training for Deep Learning Genetic Operators (DNC).
-Based on the paper: "Deep Learning-Based Operators for Evolutionary Algorithms"
-
-Uses REINFORCE (policy gradient) algorithm where:
-- Policy: Neural network (encoder-decoder) that selects genes from parents
-- Action: Selection of genes at each position (which parent to choose from)
-- Reward: Fitness improvement of offspring compared to parents
-"""
-
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from typing import Callable, Optional, List, Tuple
 import numpy as np
@@ -197,7 +186,6 @@ class RLTrainer:
         """
         self.operator.train_mode()
         
-        total_loss = 0.0
         total_reward = 0.0
         batch_rewards = []
         fitness_values = []
@@ -205,7 +193,7 @@ class RLTrainer:
         # collect episodes
         for parent1, parent2 in parent_pairs:
             # forward pass with log probabilities
-            offspring, log_probs, probs = self._forward_with_log_probs(
+            offspring, log_probs, _ = self._forward_with_log_probs(
                 parent1, parent2, temperature
             )
             
@@ -230,7 +218,7 @@ class RLTrainer:
         batch_loss = 0.0
         for i, (parent1, parent2) in enumerate(parent_pairs):
             # forward pass again for gradient computation
-            offspring, log_probs, probs = self._forward_with_log_probs(
+            offspring, log_probs, _ = self._forward_with_log_probs(
                 parent1, parent2, temperature
             )
             
@@ -363,55 +351,3 @@ class RLTrainer:
         self.history = checkpoint['history']
         self.baseline = checkpoint['baseline']
         return checkpoint['episode']
-
-
-# example usage
-if __name__ == "__main__":
-    from genetic_algorithm.crossovers.dnc_crossover import DNCrossover
-    import random
-    
-    # define a simple fitness function (maximize sum)
-    def fitness_fn(individual):
-        return sum(individual)
-    
-    # initialize DNC operator
-    dnc = DNCrossover(
-        gene_size=1,
-        hidden_size=64,
-        num_layers=1,
-        device='cuda' if torch.cuda.is_available() else 'cpu'
-    )
-    
-    # create trainer
-    trainer = RLTrainer(
-        operator=dnc,
-        fitness_function=fitness_fn,
-        learning_rate=1e-3,
-        baseline_type="moving_average"
-    )
-    
-    # population generator function
-    def generate_parent_pairs(batch_size):
-        pairs = []
-        for _ in range(batch_size):
-            # generate random parents (example: lists of 10 integers)
-            parent1 = [random.randint(0, 10) for _ in range(10)]
-            parent2 = [random.randint(0, 10) for _ in range(10)]
-            pairs.append((parent1, parent2))
-        return pairs
-    
-    # train
-    trainer.train(
-        population_generator=generate_parent_pairs,
-        num_episodes=1000,
-        batch_size=32,
-        temperature=1.0,
-        reward_type="improvement",
-        save_interval=100,
-        save_path="models/dnc_trained.pth",
-        verbose=True
-    )
-    
-    print("\nTraining completed!")
-    print(f"Final average reward: {trainer.history['rewards'][-1]:.4f}")
-    print(f"Final average fitness: {trainer.history['avg_fitness'][-1]:.4f}")

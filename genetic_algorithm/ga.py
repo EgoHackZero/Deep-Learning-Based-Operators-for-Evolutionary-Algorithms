@@ -40,6 +40,21 @@ class GeneticAlgorithm:
     @property
     def population_size(self) -> int:
         return self.__pop_size
+    
+    # fitness function getter
+    @property
+    def fitness_function(self) -> Callable:
+        return self.__fit_func
+    
+    # crossover operator getter
+    @property
+    def crossover(self) -> BaseCrossover:
+        return self.__crossover
+    
+    # mutation operator getter
+    @property
+    def mutation(self) -> BaseMutation:
+        return self.__mutation
 
     # "selector" param determines how many individuals with worst scores should be removed from the population
     def __replacement(self, selector: int):
@@ -51,6 +66,13 @@ class GeneticAlgorithm:
         return [self.__fit_func(i) for i in self.__population]
 
     # selects parents using tournament selection
+    def select_parent_pairs(self, count: int = 1, tournament_size: int = 2) -> list:
+        """Public method to select parent pairs for external use"""
+        pairs = []
+        for _ in range(count):
+            pairs.append(self.__select_parents(tournament_size))
+        return pairs
+    
     def __select_parents(self, tournament_size: int = 2) -> list:
         def tournament():
             participants = random.sample(self.__population, tournament_size)
@@ -115,6 +137,7 @@ class GeneticAlgorithm:
         selector: int,
         save_interval: Optional[int] = None,
         save_filename: str = "population.txt",
+        training_callback: Optional[Callable] = None,
         **crossover_kwargs
     ) -> list:
         if selector >= self.__pop_size:
@@ -135,9 +158,9 @@ class GeneticAlgorithm:
 
             if save_interval and i % save_interval == 0:
                 self.save_population(save_filename)
+            
+            # call training callback if provided (for online DNC training)
+            if training_callback is not None:
+                training_callback(self, i)
         
         return max(self.__population, key=lambda x: self.__fit_func(x))
-    
-
-if __name__ == "__main__":
-    pass  # example usage
