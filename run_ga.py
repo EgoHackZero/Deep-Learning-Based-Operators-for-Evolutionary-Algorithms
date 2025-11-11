@@ -200,8 +200,7 @@ def run_ga(args):
                 print(f"  Avg reward: {avg_reward:.4f}")
     
     # run GA
-    step_num = '7' if (args.crossover == 'dnc' and args.train_dnc) else '6'
-    print(f"\n[{step_num}] Running GA ({args.generations} generations)")
+    print(f"\nRunning GA ({args.generations} generations)")
     best = ga.start(
         generations=args.generations,
         selector=args.selector,

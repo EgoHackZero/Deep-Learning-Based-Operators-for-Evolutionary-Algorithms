@@ -16,7 +16,7 @@ Assignment for HVI - 2025. Paper: [Deep Learning-Based Operators for Evolutionar
 
 **run_ga.py** - main execution script with CLI. Run GA with any combination of operators and problems.
 
-## Quick Start
+## Run Genetic Algorithm
 
 ```bash
 # Basic usage with traditional operators
