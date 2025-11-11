@@ -129,9 +129,9 @@ def run_ga(args):
     ga.init_population(initial_pop)
     print(f"Population initialized (size={args.population_size})")
     
-    # optional: train DNC before running GA
+    # optional: train DNC
     trainer = None
-    if args.crossover == 'dnc' and args.train_episodes > 0:
+    if args.crossover == 'dnc' and args.train_dnc:
         trainer = RLTrainer(
             operator=crossover,
             fitness_function=problem.fitness_function,
@@ -139,73 +139,68 @@ def run_ga(args):
             baseline_type="moving_average"
         )
         
-        # use current population for training
+        # generator for parent pairs from current population
         def pop_generator(batch_size):
             pairs = ga.select_parent_pairs(count=batch_size)
             return pairs
         
-        if args.train_strategy == 'once':
-            # Strategy 1: One-time pre-training on initial population
-            print(f"\nPre-training DNC operator ({args.train_episodes} episodes)")
-            print(f"Strategy: One-time training on initial population")
+        if args.train_mode == 'pretrain':
+            # Pre-train once before GA starts
+            print(f"\nPre-training DNC ({args.pretrain_episodes} episodes)")
             
             trainer.train(
                 population_generator=pop_generator,
-                num_episodes=args.train_episodes,
+                num_episodes=args.pretrain_episodes,
                 batch_size=args.batch_size,
                 temperature=1.0,
                 reward_type="improvement",
-                save_interval=max(args.train_episodes // 5, 1),
-                save_path=args.save_model or "models/dnc_trained.pth",
+                save_interval=max(args.pretrain_episodes // 5, 1),
+                save_path=args.save_model or "models/dnc_pretrained.pth",
                 verbose=True
             )
             
-            print(f"DNC pre-training completed")
-            print(f"Initial reward: {trainer.history['rewards'][0]:.4f}")
-            print(f"Final reward: {trainer.history['rewards'][-1]:.4f}")
+            print(f"Pre-training completed")
+            print(f"  Initial reward: {trainer.history['rewards'][0]:.4f}")
+            print(f"  Final reward: {trainer.history['rewards'][-1]:.4f}")
         
-        elif args.train_strategy in ['periodic', 'continuous']:
-            # Strategy 2/3: Online training during GA evolution
-            interval = 1 if args.train_strategy == 'continuous' else args.train_interval
+        elif args.train_mode == 'online':
+            # Online training during GA evolution
             print(f"\nDNC will be trained online during GA")
-            print(f"Strategy: {args.train_strategy}")
-            print(f"Training interval: every {interval} generation(s)")
-            print(f"Episodes per update: {args.train_epochs_per_update}")
-            if args.warmup_generations > 0:
-                print(f"Warmup period: {args.warmup_generations} generations")
+            print(f"  Training every {args.online_interval} generation(s)")
+            print(f"  Episodes per update: {args.online_episodes}")
+            if args.warmup_gens > 0:
+                print(f"  Warmup period: {args.warmup_gens} generations")
     
     # define training callback for online learning
     training_callback = None
-    if args.crossover == 'dnc' and args.train_strategy in ['periodic', 'continuous'] and trainer is not None:
-        interval = 1 if args.train_strategy == 'continuous' else args.train_interval
-        
+    if args.crossover == 'dnc' and args.train_dnc and args.train_mode == 'online' and trainer is not None:
         def training_callback(ga_instance, generation):
             # skip warmup period
-            if generation < args.warmup_generations:
+            if generation < args.warmup_gens:
                 return
             
             # train at specified intervals
-            if (generation - args.warmup_generations) % interval == 0 and generation > 0:
-                print(f"\n[Gen {generation}] Training DNC for {args.train_epochs_per_update} epochs...")
+            if (generation - args.warmup_gens) % args.online_interval == 0 and generation > 0:
+                print(f"\n[Gen {generation}] Training DNC ({args.online_episodes} episodes)...")
                 
                 def pop_gen(batch_size):
                     return ga_instance.select_parent_pairs(count=batch_size)
                 
                 trainer.train(
                     population_generator=pop_gen,
-                    num_episodes=args.train_epochs_per_update,
+                    num_episodes=args.online_episodes,
                     batch_size=args.batch_size,
                     temperature=1.0,
                     reward_type="improvement",
-                    save_interval=args.train_epochs_per_update + 1,  # don't save during online training
+                    save_interval=args.online_episodes + 1,  # don't save during online training
                     save_path=args.save_model or "models/dnc_online.pth",
                     verbose=False
                 )
-                avg_reward = sum(trainer.history['rewards'][-args.train_epochs_per_update:]) / args.train_epochs_per_update
-                print(f"Avg reward: {avg_reward:.4f}")
+                avg_reward = sum(trainer.history['rewards'][-args.online_episodes:]) / args.online_episodes
+                print(f"  Avg reward: {avg_reward:.4f}")
     
     # run GA
-    step_num = '7' if (args.crossover == 'dnc' and args.train_episodes > 0) else '6'
+    step_num = '7' if (args.crossover == 'dnc' and args.train_dnc) else '6'
     print(f"\n[{step_num}] Running GA ({args.generations} generations)")
     best = ga.start(
         generations=args.generations,
@@ -315,37 +310,42 @@ def main():
         help='Path to pretrained DNC model'
     )
     
-    # RL training parameters
+    # RL training parameters (only used with --crossover dnc)
     parser.add_argument(
-        '--train-episodes',
-        type=int,
-        default=0,
-        help='Number of RL training episodes (0 = no training)'
+        '--train-dnc',
+        action='store_true',
+        help='Enable DNC training (only with --crossover dnc)'
     )
     parser.add_argument(
-        '--train-strategy',
+        '--train-mode',
         type=str,
-        choices=['once', 'periodic', 'continuous'],
-        default='once',
-        help='Training strategy: once (pre-train), periodic (every N gens), continuous (every gen)'
+        choices=['pretrain', 'online'],
+        default='pretrain',
+        help='pretrain: train once before GA starts | online: train during GA evolution'
     )
     parser.add_argument(
-        '--train-interval',
+        '--pretrain-episodes',
+        type=int,
+        default=100,
+        help='Number of episodes for pre-training (--train-mode pretrain)'
+    )
+    parser.add_argument(
+        '--online-interval',
         type=int,
         default=10,
-        help='Training interval for periodic strategy (train every N generations)'
+        help='Train DNC every N generations (--train-mode online)'
     )
     parser.add_argument(
-        '--train-epochs-per-update',
+        '--online-episodes',
         type=int,
         default=5,
-        help='Number of training epochs per update for periodic/continuous strategies'
+        help='Number of episodes per online training update (--train-mode online)'
     )
     parser.add_argument(
-        '--warmup-generations',
+        '--warmup-gens',
         type=int,
         default=0,
-        help='Number of generations to run before starting DNC training'
+        help='Wait N generations before starting online training (--train-mode online)'
     )
     parser.add_argument(
         '--batch-size',
