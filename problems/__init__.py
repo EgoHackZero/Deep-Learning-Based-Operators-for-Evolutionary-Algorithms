@@ -1,12 +1,15 @@
 from problems.onemax import OneMaxProblem
 from problems.knapsack import KnapsackProblem
 from problems.tsp import TSPProblem
+from problems.symbolic_regression import SymbolicRegression
 
 
 PROBLEMS = {
     'onemax': OneMaxProblem,
     'knapsack': KnapsackProblem,
-    'tsp': TSPProblem
+    'tsp': TSPProblem,
+    'symbolic_regression': SymbolicRegression,
+    'symreg': SymbolicRegression  # Alias
 }
 
 
