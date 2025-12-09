@@ -293,8 +293,16 @@ class BERTMutation(BaseMutation):
         Args:
             path: Path to load model from
         """
-        checkpoint = torch.load(path, map_location=self.device)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
+        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+
+        # Handle both formats: 'model_state_dict' (from save_model) and 'model' (from trainer)
+        if 'model_state_dict' in checkpoint:
+            self.model.load_state_dict(checkpoint['model_state_dict'])
+        elif 'model' in checkpoint:
+            self.model.load_state_dict(checkpoint['model'])
+        else:
+            raise KeyError("Checkpoint must contain either 'model_state_dict' or 'model' key")
+
         self.masking_prob = checkpoint.get('masking_prob', self.masking_prob)
         self.temperature = checkpoint.get('temperature', self.temperature)
         self.epsilon_greedy = checkpoint.get('epsilon_greedy', self.epsilon_greedy)

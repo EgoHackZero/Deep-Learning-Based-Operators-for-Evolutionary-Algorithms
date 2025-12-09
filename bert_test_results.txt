@@ -1,0 +1,119 @@
+################################################################################
+# TRAINED BERT MUTATION - FULL GA TEST
+################################################################################
+
+================================================================================
+TEST 1: BASELINE (No Mutation)
+================================================================================
+
+Target function: 2x^2 + 3x + 1
+Population size: 100
+Generations: 100
+Strategy: Selection + Elitism ONLY (no mutation)
+
+Initial population stats:
+  Best fitness: -263.063333
+  Mean fitness: -68484746.500480
+
+Running baseline GA...
+Population: 99 / 100                     Current maximum: -263.063333                 Current mean: -263.06333350480
+Baseline Results:
+  Best fitness: -263.063333
+  Best expression: (((((x - -5.36) - (x - x)) - ((x - x) / (x - x))) + (((x * x) / (x + x)) * x)) + ((((x - x) / (x / -0.31)) / x) / (((x + x) / x) / ((x + 6.47) / (-1.17 + x)))))
+  Improvement: 0.000000
+
+
+================================================================================
+TEST 2: UNTRAINED BERT
+================================================================================
+
+Target function: 2x^2 + 3x + 1
+Population size: 100
+Generations: 100
+
+[-] Using UNTRAINED BERT model
+
+Initial population stats:
+  Best fitness: -263.063333
+  Mean fitness: -68484746.500480
+
+Running GA for 100 generations...
+D:\Desktop\CapsNet-Experiments\capsnets_venv\lib\site-packages\torch\nn\functional.py:5560: UserWarning: 1Torch was not compiled with flash attention. (Triggered internally at C:\actions-runner\_work\pytorch\pytorch\builder\windows\pytorch\aten\src\ATen\native\transformers\cuda\sdp_utils.cpp:555.)
+  attn_output = scaled_dot_product_attention(q, k, v, attn_mask, dropout_p, is_causal)
+Population: 99 / 100                     Current maximum: -67.264204                 Current mean: -186.10441650
+Completed in 32.8 seconds (0.5 minutes)
+
+Final Results:
+  Best fitness: -67.264204
+  Best expression: (((((x - 1.81) * x) + (pow / 5.50)) + 8.97) + (x * 5.69))
+  Best tree length: 17
+
+Evolution Progress:
+  Initial best: -179.578431
+  Final best: -67.264204
+  Improvement: 112.314227
+  Generations to converge: 100/100
+
+Solution verification (2x^2 + 3x + 1 test):
+  x=1: expected 6, got 13.85 
+  x=2: expected 15, got 20.72 
+  x=3: expected 28, got 29.60 
+  x=4: expected 45, got 40.47 
+  x=5: expected 66, got 53.35 
+
+[-] Solution is INCORRECT or suboptimal
+
+================================================================================
+TEST 3: TRAINED BERT
+================================================================================
+
+Target function: 2x^2 + 3x + 1
+Population size: 100
+Generations: 100
+
+BERT mutation model loaded from models/bert_test_trained.pth
+[+] Loaded trained BERT model from models/bert_test_trained.pth
+
+Initial population stats:
+  Best fitness: -263.063333
+  Mean fitness: -68484746.500480
+
+Running GA for 100 generations...
+Population: 99 / 100                     Current maximum: -8.196197                 Current mean: -325.1145014254380
+Completed in 33.3 seconds (0.6 minutes)
+
+Final Results:
+  Best fitness: -8.196197
+  Best expression: ((x + (x / ((x / x) / x))) / 0.46)
+  Best tree length: 11
+
+Evolution Progress:
+  Initial best: -263.063333
+  Final best: -8.196197
+  Improvement: 254.867136
+  Generations to converge: 100/100
+
+Solution verification (2x^2 + 3x + 1 test):
+  x=1: expected 6, got 4.37 
+  x=2: expected 15, got 13.11 
+  x=3: expected 28, got 26.22 
+  x=4: expected 45, got 43.70 
+  x=5: expected 66, got 65.55 
+
+[-] Solution is INCORRECT or suboptimal
+
+================================================================================
+COMPARATIVE ANALYSIS
+================================================================================
+
+Metric                         Baseline        Untrained       Trained
+--------------------------------------------------------------------------------
+Best Fitness                   -263.063333     -67.264204      -8.196197
+Fitness Improvement            0.000000        112.314227      254.867136
+Generations to Converge        N/A             100             100
+Correct Solution Found         Unknown         No              No
+
+Best Expressions:
+  Baseline:  N/A
+  Untrained: (((((x - 1.81) * x) + (pow / 5.50)) + 8.97) + (x * 5.69))
+  Trained:   ((x + (x / ((x / x) / x))) / 0.46)

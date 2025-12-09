@@ -125,13 +125,14 @@ class SymbolicRegression(BaseProblem):
         if not tree:
             return 0.0
 
-        # Use a stack-based approach to avoid recursion issues
-        stack = []
-        index = len(tree) - 1
-
+        # Evaluate tree in prefix notation (forward traversal)
         def eval_from_index(idx):
-            if idx < 0:
-                return 0.0, -1
+            """
+            Recursively evaluate subtree starting at given index.
+            Returns (value, next_index) where next_index is the position after this subtree.
+            """
+            if idx >= len(tree):
+                return 0.0, idx
 
             node = tree[idx]
 
@@ -140,11 +141,11 @@ class SymbolicRegression(BaseProblem):
                 arity = self.function_set[node]
                 args = []
 
-                # Evaluate children from right to left (since we're going backwards)
-                current_idx = idx - 1
+                # Evaluate children left to right (prefix notation)
+                current_idx = idx + 1
                 for _ in range(arity):
                     arg_value, current_idx = eval_from_index(current_idx)
-                    args.insert(0, arg_value)  # Insert at beginning
+                    args.append(arg_value)
 
                 # Apply function
                 result = self._apply_function(node, args)
@@ -152,16 +153,16 @@ class SymbolicRegression(BaseProblem):
 
             # Check if it's a terminal
             elif node in variables:
-                return variables[node], idx - 1
+                return variables[node], idx + 1
 
             # Otherwise it's a constant
             else:
                 try:
-                    return float(node), idx - 1
+                    return float(node), idx + 1
                 except (ValueError, TypeError):
-                    return 0.0, idx - 1
+                    return 0.0, idx + 1
 
-        result, _ = eval_from_index(len(tree) - 1)
+        result, _ = eval_from_index(0)
         return result
 
     def _apply_function(self, func: str, args: List[float]) -> float:
